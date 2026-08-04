@@ -1,16 +1,19 @@
 package main
 
 import (
+	"chronolens/db"
 	logDB "chronolens/log"
+	"chronolens/route"
 	"database/sql"
 	"fmt"
 	"log"
 
+	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
-// TODO add native logs
+// TODO dodaj native logove
 
 func main() {
 
@@ -18,7 +21,7 @@ func main() {
 		Services: make(map[string]logDB.Service),
 	}
 
-	// Register services (example)
+	// Registruj servise (primer)
 	serviceExample := logDB.Service{
 		ID:    "serviceExample",
 		Name:  "Service One",
@@ -27,27 +30,45 @@ func main() {
 	}
 	registry.Register(serviceExample)
 
-	// database
+	// baza podataka
 	connStr := "user=postgres password=postgres dbname=postgres sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
+	database, err := sql.Open("postgres", connStr)
 	if err != nil {
 		zap.L().Info("opening connection to database failed")
 	}
-	defer db.Close()
+	defer database.Close()
 
-	// Check if the connection is alive
-	err = db.Ping()
+	// proveri da li je konekcija aktivna
+	err = database.Ping()
 	if err != nil {
 		zap.L().Info("connection to database not alive")
 	}
 
 	log.Println("Successfully connected to PostgreSQL!")
 
-	// Get service information (example)
+	err = db.EnsureReportsTable(database)
+	if err != nil {
+		zap.L().Info("creating reports table failed")
+	}
+
+	// preuzmi informacije o servisu
 	service, ok := registry.Get("serviceExample")
 	if ok {
 		fmt.Printf("Service: %v registered ", service.Name)
 	} else {
 		fmt.Println("Service unregistered succesfully ")
 	}
+
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.Default()
+	router.POST("/report", route.ReportHandler(database))
+	router.GET("/results", route.ResultsHandler(database))
+	router.GET("/summary", route.SummaryHandler(database))
+
+	log.Println("Listening on :9001")
+	router.Run(":9001")
+}
+
+func init() {
+
 }

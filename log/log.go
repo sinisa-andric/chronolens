@@ -5,15 +5,14 @@ import (
 	"sync"
 )
 
-// log event
+// log događaj
 
-// Service structure for registration
+// Struktura servisa za registraciju
 type Service struct {
 	ID    string
 	Name  string
 	Type  string
-	Event string // regiestered new service, received result from algorithmia, received problem
-	// other details
+	Event string // registrovan novi servis, primljen rezultat od algorithmia, primljen problem
 }
 
 type Registry struct {
