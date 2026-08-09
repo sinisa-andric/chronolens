@@ -7,7 +7,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
@@ -61,11 +63,19 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: false,
+		MaxAge:           12 * time.Hour,
+	}))
 	router.POST("/report", route.ReportHandler(database))
 	router.GET("/results", route.ResultsHandler(database))
 	router.GET("/summary", route.SummaryHandler(database))
 
-	log.Println("Listening on :9001")
+	log.Println("[Chronolens] Servis pokrenut na :9001")
 	router.Run(":9001")
 }
 
