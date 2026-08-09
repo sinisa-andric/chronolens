@@ -16,6 +16,14 @@ type ChronolensResponse struct {
 	Response any    `json:"response,omitempty"`
 }
 
+// reportRequest je models.Report dopunjen opcionom putanjom pretrage u telu zahteva — embedding
+// umesto dodavanja polja direktno u models.Report da bi trajno čuvanje putanje ostalo ograničeno
+// na db i route pakete
+type reportRequest struct {
+	models.Report
+	Trajectory []db.TrajectoryPoint `json:"trajectory,omitempty"`
+}
+
 // ReportHandler prima prijavljene rezultate i trajno ih čuva
 func ReportHandler(database *sql.DB) gin.HandlerFunc {
 
@@ -34,9 +42,9 @@ func ReportHandler(database *sql.DB) gin.HandlerFunc {
 
 		log.Info("report received")
 
-		var report models.Report
+		var req reportRequest
 
-		err := ctx.BindJSON(&report)
+		err := ctx.BindJSON(&req)
 		if err != nil {
 			log.Error("failed to bind report body", zap.Error(err))
 			ctx.JSON(
@@ -50,7 +58,7 @@ func ReportHandler(database *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		if report.ServiceID == "" {
+		if req.ServiceID == "" {
 			ctx.JSON(
 				http.StatusBadRequest,
 				ChronolensResponse{
@@ -62,7 +70,7 @@ func ReportHandler(database *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		saved, err := db.SaveReport(database, report)
+		saved, err := db.SaveReport(database, req.Report, req.Trajectory)
 		if err != nil {
 			log.Error("failed to save report", zap.Error(err))
 			ctx.JSON(
